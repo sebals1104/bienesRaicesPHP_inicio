@@ -5,7 +5,7 @@ estaAutenticado();
 use App\Propiedad;
 
 //obtener las propiedades
-
+$db = conectarDB();
 $propiedades = Propiedad::all();
 
 //mensaje condicional

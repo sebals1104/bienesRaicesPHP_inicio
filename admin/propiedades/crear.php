@@ -23,17 +23,17 @@ $errores = Propiedad::getErrores();
 
 if($_SERVER["REQUEST_METHOD"] === 'POST'){
 
-$propiedad = new Propiedad($_POST);
+$propiedad = new Propiedad($_POST['propiedad']);
 
 //generar un nombre unico para la imagen
 $nombreImagen = md5(uniqid(rand(), true)).".jpg";
-if(!empty($_FILES['imagenes']['tmp_name'])){
+
+if($_FILES['propiedad']['tmp_name']['imagenes']){
     $manager = Image::usingDriver(Driver::class);
-    $image = $manager->read($_FILES['imagenes']['tmp_name']);
+    $image = $manager->read($_FILES['propiedad']['tmp_name']['imagenes']);
     $image->cover(800, 600);
     $propiedad->setImgen($nombreImagen);
 }
-
 
 $errores = $propiedad->validar();
 
@@ -50,6 +50,7 @@ if(empty($errores)){
     $image->save(CARPETA_IMAGENES.$nombreImagen);
 
     $resultado = $propiedad->guardar();
+
     if($resultado){
         header('location: /admin?resultado=1');
     }

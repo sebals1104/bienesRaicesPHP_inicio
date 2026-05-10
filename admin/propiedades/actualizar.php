@@ -3,7 +3,7 @@ use App\Propiedad;
 require '../../includes/app.php';
 estaAutenticado();
 
-
+$db = conectarDB();
 
 //validar la URL por ID valido
 $id = $_GET['id'];
@@ -23,57 +23,40 @@ $resultado = mysqli_query($db, $consulta);
 //arreglo con mensajes de errores
 $errores = [];
 
-//asignar variables
-$titulo = $propiedad->Titulo;
-$precio = $propiedad->Precio;
-$descripcion = $propiedad->Descripcion;
-$habitaciones = $propiedad->Habitaciones;
-$wc = $propiedad->WC;
-$estacionamiento = $propiedad->Estacionamiento;
-$vendedores_Id = $propiedad->Vendedores_Id;
-$imagenPropiedad = $propiedad->Imagenes;
-
 //ejecutar el codigo despues de que el usuario envia el formulario
 
 if($_SERVER["REQUEST_METHOD"] === 'POST'){
 
+$args = $_POST['propiedad'];
 //asignar files hacia una variable (si existe)
 $imagen = $_FILES['imagenes'] ?? null;
 
 //Asignar y sanear valores recibidos por POST
-$titulo = mysqli_real_escape_string($db, $_POST['titulo'] ?? '');
-$precio = mysqli_real_escape_string($db, $_POST['precio'] ?? '');
-$descripcion = mysqli_real_escape_string($db, $_POST['descripcion'] ?? '');
-$habitaciones = intval($_POST['habitaciones'] ?? 0);
-$wc = intval($_POST['wc'] ?? 0);
-$estacionamiento = intval($_POST['estacionamiento'] ?? 0);
-$vendedores_Id = intval($_POST['vendedores_Id'] ?? 0);
-
-if(!$titulo){
+if(!$propiedad->Titulo){
     $errores[] = "Debes añadir un titulo";
 }
 
-if(!$precio){
+if(!$propiedad->Precio){
     $errores[] = "Debes añadir un precio";
 }
 
-if(strlen($descripcion) < 50){
+if(strlen($propiedad->Descripcion) < 50){
     $errores[] = "Debes añadir una mas amplia descripcion";
 }
 
-if(!$habitaciones){
+if(!$propiedad->Habitaciones){
     $errores[] = "Debes añadir habitaciones";
 }
 
-if(!$wc){
+if(!$propiedad->WC){
     $errores[] = "Debes añadir baños";
 }
 
-if(!$estacionamiento){
+if(!$propiedad->Estacionamiento){
     $errores[] = "Debes añadir estacionamiento";
 }
 
-if(!$vendedores_Id){
+if(!$propiedad->Vendedores_Id){
     $errores[] = "Debes seleccionar un vendedor";
 }
 
@@ -138,7 +121,7 @@ if(empty($errores)){
     }
 
     //actualizar la propiedad
-    $query = "UPDATE propiedades SET Titulo = '$titulo', Precio = '$precio', Imagenes = '$nombreImagen', Descripcion = '$descripcion', Habitaciones = '$habitaciones', wc = '$wc', Estacionamiento = '$estacionamiento', Vendedores_Id = '$vendedores_Id' WHERE Id = $id ";
+    $query = "UPDATE propiedades SET Titulo = '{$propiedad->Titulo}', Precio = '{$propiedad->Precio}', Imagenes = '{$nombreImagen}', Descripcion = '{$propiedad->Descripcion}', Habitaciones = {$propiedad->Habitaciones}, WC = {$propiedad->WC}, Estacionamiento = {$propiedad->Estacionamiento}, Vendedores_Id = {$propiedad->Vendedores_Id} WHERE Id = {$propiedad->Id} ";
 
     $resultado = mysqli_query($db, $query);
 

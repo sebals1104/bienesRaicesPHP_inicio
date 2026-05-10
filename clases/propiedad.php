@@ -40,9 +40,18 @@ class Propiedad{
     }
 
     public function guardar(){
+        if(isset($this->Id)){
+            //actualizar
+            return $this->actualizar();
+        }else{
+            //crear
+            return $this->crear();
+        }
+    }
+
+    public function crear(){
         //sanitizar los datos
         $datos = $this->sanitizarDatos();
-
 
         //insertar en la base de datos
         $query = "INSERT INTO propiedades (";
@@ -51,7 +60,25 @@ class Propiedad{
         $query .= join("','", array_values($datos));
         $query .= "')";
 
-        return self::$db->query($query);
+        $resultado = self::$db->query($query);
+        return $resultado;
+    }
+
+    public function actualizar(){
+        //sanitizar los datos
+        $datos = $this->sanitizarDatos();
+
+        $valores = [];
+        foreach($datos as $key => $value){
+            $valores[] = "{$key} = '{$value}'";
+        }
+        $query = "UPDATE propiedades SET ";
+        $query .= join(', ', $valores);
+        $query .= " WHERE Id = '" . self::$db->escape_string($this->Id) . "' ";
+        $query .= " LIMIT 1";
+
+        $resultado = self::$db->query($query);
+        return $resultado;
     }
 
     public function atributos(){
@@ -151,5 +178,12 @@ class Propiedad{
             }
         }
     return $objeto;
+    }
+    public function sincronizar($args = []){
+        foreach($args as $key => $value){
+            if(property_exists($this, $key) && !is_null($value)){
+                $this->$key = $value;
+            }
+        }
     }
 }
