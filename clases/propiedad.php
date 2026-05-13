@@ -5,7 +5,7 @@ namespace App;
 class Propiedad{
     //base de datos
     protected static $db;
-    protected static $columnasDB = ['Id', 'Titulo', 'Precio', 'Imagenes', 'Descripcion', 'Habitaciones', 'WC', 'Estacionamiento', 'Creado', 'Vendedores_Id'];
+    protected static $columnasDB = ['Id', 'Titulo', 'Precio', 'Imagenes', 'Descripcion', 'Habitaciones', 'wc', 'Estacionamiento', 'Creado', 'Vendedores_Id'];
 
 
     //Errores
@@ -17,7 +17,7 @@ class Propiedad{
     public $Imagenes;
     public $Descripcion;
     public $Habitaciones;
-    public $WC;
+    public $wc;
     public $Estacionamiento;
     public $Creado;
     public $Vendedores_Id;
@@ -28,7 +28,7 @@ class Propiedad{
         $this->Imagenes = $args['imagenes'] ?? $args['Imagenes'] ?? '';
         $this->Descripcion = $args['descripcion'] ?? $args['Descripcion'] ?? '';
         $this->Habitaciones = $args['habitaciones'] ?? $args['Habitaciones'] ?? '';
-        $this->WC = $args['wc'] ?? $args['WC'] ?? '';
+        $this->wc = $args['wc'] ?? '';
         $this->Estacionamiento = $args['estacionamiento'] ?? $args['Estacionamiento'] ?? '';
         $this->Creado = date('Y/m/d');
         $this->Vendedores_Id = $args['Vendedores_Id'] ?? $args['vendedores_Id'] ?? '';
@@ -121,7 +121,7 @@ class Propiedad{
             self::$errores[] = "El numero de habitaciones es obligatorio";
         }
 
-        if(!$this->WC){
+        if(!$this->wc){
             self::$errores[] = "El numero de baños es obligatorio";
         }
 
@@ -140,7 +140,14 @@ class Propiedad{
         return self::$errores;
     }
 
-    public function setImgen($imagen){
+    public function setImagen($imagen){
+        if($this->Id && $this->Imagenes){
+            $rutaActual = CARPETA_IMAGENES.$this->Imagenes;
+            if(file_exists($rutaActual)){
+                unlink($rutaActual);
+            }
+        }
+
         if($imagen){
             $this->Imagenes = $imagen;
         }
@@ -180,9 +187,27 @@ class Propiedad{
     return $objeto;
     }
     public function sincronizar($args = []){
+        $map = [
+            'titulo' => 'Titulo',
+            'precio' => 'Precio',
+            'imagenes' => 'Imagenes',
+            'descripcion' => 'Descripcion',
+            'habitaciones' => 'Habitaciones',
+            'wc' => 'wc',
+            'estacionamiento' => 'Estacionamiento',
+            'vendedores_id' => 'Vendedores_Id',
+            'vendedores_Id' => 'Vendedores_Id',
+            'Vendedores_Id' => 'Vendedores_Id'
+        ];
+
         foreach($args as $key => $value){
-            if(property_exists($this, $key) && !is_null($value)){
-                $this->$key = $value;
+            if(is_null($value)){
+                continue;
+            }
+
+            $prop = $map[$key] ?? $key;
+            if(property_exists($this, $prop)){
+                $this->$prop = $value;
             }
         }
     }

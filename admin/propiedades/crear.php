@@ -32,7 +32,7 @@ if($_FILES['propiedad']['tmp_name']['imagenes']){
     $manager = Image::usingDriver(Driver::class);
     $image = $manager->read($_FILES['propiedad']['tmp_name']['imagenes']);
     $image->cover(800, 600);
-    $propiedad->setImgen($nombreImagen);
+    $propiedad->setImagen($nombreImagen);
 }
 
 $errores = $propiedad->validar();

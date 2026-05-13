@@ -1,5 +1,7 @@
 <?php 
 use App\Propiedad;
+use Intervention\Image\Drivers\Gd\Driver;
+use App\ImageManagerCompat as Image;
 require '../../includes/app.php';
 estaAutenticado();
 
@@ -21,113 +23,48 @@ $consulta = "SELECT * FROM vendedores";
 $resultado = mysqli_query($db, $consulta);
 
 //arreglo con mensajes de errores
-$errores = [];
+$errores = Propiedad::getErrores();
 
 //ejecutar el codigo despues de que el usuario envia el formulario
 
 if($_SERVER["REQUEST_METHOD"] === 'POST'){
 
+//Asignar los atributos
 $args = $_POST['propiedad'];
-//asignar files hacia una variable (si existe)
-$imagen = $_FILES['imagenes'] ?? null;
+$propiedad->sincronizar($args);
 
-//Asignar y sanear valores recibidos por POST
-if(!$propiedad->Titulo){
-    $errores[] = "Debes añadir un titulo";
+//validacion
+$errores = $propiedad->validar();
+
+//subida de archivos
+$imagen = $_FILES['propiedad'] ?? [];
+$imagenTmp = $imagen['tmp_name']['imagenes'] ?? '';
+
+if($imagenTmp){
+    //generar un nombre unico
+    $nombreImagen = md5(uniqid(rand(), true)).".jpg";
+
+    $manager = Image::usingDriver(Driver::class);
+    $image = $manager->read($imagenTmp);
+    $image->cover(800, 600);
+
+    $propiedad->setImagen($nombreImagen);
 }
-
-if(!$propiedad->Precio){
-    $errores[] = "Debes añadir un precio";
-}
-
-if(strlen($propiedad->Descripcion) < 50){
-    $errores[] = "Debes añadir una mas amplia descripcion";
-}
-
-if(!$propiedad->Habitaciones){
-    $errores[] = "Debes añadir habitaciones";
-}
-
-if(!$propiedad->WC){
-    $errores[] = "Debes añadir baños";
-}
-
-if(!$propiedad->Estacionamiento){
-    $errores[] = "Debes añadir estacionamiento";
-}
-
-if(!$propiedad->Vendedores_Id){
-    $errores[] = "Debes seleccionar un vendedor";
-}
-
-//validar por tamaño (2MB por defecto)
-$medida = 2 * 1024 * 1024; // 2MB
-
-// Si el formulario POST llega vacío, puede ser porque el archivo excede post_max_size
-if($_SERVER['REQUEST_METHOD'] === 'POST' && empty($_POST) && ($imagen === null || (isset($imagen['error']) && ($imagen['error'] === UPLOAD_ERR_INI_SIZE || $imagen['error'] === UPLOAD_ERR_FORM_SIZE)))){
-    $errores[] = "Los datos del formulario no se recibieron. El archivo puede exceder el límite del servidor (post_max_size / upload_max_filesize).";
-}
-
-// Manejo de errores de subida y validaciones del archivo
-if($imagen && isset($imagen['error']) && $imagen['error'] !== UPLOAD_ERR_NO_FILE){
-    if($imagen['error'] === UPLOAD_ERR_INI_SIZE || $imagen['error'] === UPLOAD_ERR_FORM_SIZE){
-        $errores[] = "La imagen excede el tamaño máximo permitido por el servidor.";
-    } elseif($imagen['error'] !== UPLOAD_ERR_OK){
-        $errores[] = "Error al subir la imagen (código {$imagen['error']}).";
-    } else {
-        if(isset($imagen['size']) && $imagen['size'] > $medida){
-            $errores[] = "La imagen es muy pesada. Tamaño máximo: ".($medida/1024/1024)."MB";
-        }
-        // validar tipo mime si está disponible
-        if(isset($imagen['tmp_name']) && $imagen['tmp_name']){
-            $finfo = @finfo_open(FILEINFO_MIME_TYPE);
-            if($finfo){
-                $mime = finfo_file($finfo, $imagen['tmp_name']);
-                finfo_close($finfo);
-                $allowedTypes = ['image/jpeg','image/png'];
-                if(!in_array($mime, $allowedTypes)){
-                    $errores[] = "Formato de imagen no permitido. Use JPG o PNG.";
-                }
-            }
-        }
-    }
-}
-
 
 //revisar que el arreglo de errores este vacio
 if(empty($errores)){
-    //crear carpeta
-    $carpetaImagenes = '../../imagenes/';
-
-    if(!is_dir($carpetaImagenes)){
-        mkdir($carpetaImagenes);
-    }
-
-    $nombreImagen = '';
-
-    if($imagen && !empty($imagen['name'])) {
-        //eliminar la imagen previa si existe
-        if(!empty($propiedad->Imagenes) && file_exists($carpetaImagenes . $propiedad->Imagenes)){
-            unlink($carpetaImagenes . $propiedad->Imagenes);
+    if($imagenTmp){
+        if(!is_dir(CARPETA_IMAGENES)){
+            mkdir(CARPETA_IMAGENES);
         }
 
-        //generar un nombre unico con la misma extension
-        $extension = pathinfo($imagen['name'], PATHINFO_EXTENSION);
-        $nombreImagen = md5( uniqid( rand(), true ) ).".".$extension;
+        $image->save(CARPETA_IMAGENES.$nombreImagen);
 
-        move_uploaded_file($imagen['tmp_name'], $carpetaImagenes . $nombreImagen );
-    }else{
-        $nombreImagen = $propiedad->Imagenes;
     }
 
-    //actualizar la propiedad
-    $query = "UPDATE propiedades SET Titulo = '{$propiedad->Titulo}', Precio = '{$propiedad->Precio}', Imagenes = '{$nombreImagen}', Descripcion = '{$propiedad->Descripcion}', Habitaciones = {$propiedad->Habitaciones}, WC = {$propiedad->WC}, Estacionamiento = {$propiedad->Estacionamiento}, Vendedores_Id = {$propiedad->Vendedores_Id} WHERE Id = {$propiedad->Id} ";
-
-    $resultado = mysqli_query($db, $query);
-
+    $resultado = $propiedad->guardar();
     if($resultado){
-        //redireccionar al usuario
-        header('Location: /admin?mensaje=2');
+        header('Location: /admin');
     }
 }
 }

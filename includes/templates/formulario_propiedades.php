@@ -4,7 +4,7 @@ $titulo = $propiedad->Titulo ?? '';
 $precio = $propiedad->Precio ?? '';
 $descripcion = $propiedad->Descripcion ?? '';
 $habitaciones = $propiedad->Habitaciones ?? '';
-$wc = $propiedad->WC ?? '';
+$wc = $propiedad->wc ?? '';
 $estacionamiento = $propiedad->Estacionamiento ?? '';
 $vendedores_Id = $propiedad->Vendedores_Id ?? '';
 ?>
